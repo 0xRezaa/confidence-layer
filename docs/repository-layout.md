@@ -29,14 +29,11 @@ git commit -m "chore: update issue fixture baseline"
 
 Commit and push target-repository changes to the fork before publishing a parent commit that references them. Avoid automatically following the fork's branch tip: each run needs a fixed base SHA.
 
-## Publishing the initial split
+## GitHub repositories
 
-The initial split is prepared locally. Publish the existing fork's checkpoint and documentation-removal commits first:
+- Confidence layer: [0xRezaa/confidence-layer](https://github.com/0xRezaa/confidence-layer), private, default branch `main`.
+- Issue fixture: [kAWEOME/nebius-nvidia-code](https://github.com/kAWEOME/nebius-nvidia-code), public, default branch `master`.
 
-```sh
-git -C /Users/rezabanazadeh/Projects/nebius-nvidia-code push origin master
-```
+The fork's checkpoint and documentation-removal commits have been published, so the pinned fixture revision is available from GitHub. The documents remain accessible in older public fork commits; moving them into the private confidence-layer repository does not remove that history.
 
-Then create or select a separate GitHub repository for the confidence layer, add it as this repository's `origin`, and push `main`. Do not reuse the Express fork's remote as the confidence-layer origin.
-
-Until the fork's cleanup commit has been pushed, a fresh submodule checkout from GitHub cannot fetch the locally pinned revision. The prepared local fixture already contains that commit. After publishing, verify a fresh recursive clone of the confidence-layer repository.
+For future fixture updates, push the target commit to the issue repository before publishing the parent commit that references it. Verify published changes with a fresh recursive clone using the instructions in the root README.

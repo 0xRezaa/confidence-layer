@@ -18,7 +18,13 @@ The Express fork keeps its own Git history and [GitHub issue #1](https://github.
 
 ## Checkout
 
-Clone this repository using its Git remote URL with `git clone --recurse-submodules <confidence-layer-url>`. For an existing clone, run:
+The repository is private; authenticate with a GitHub account that has access. To clone it with the fixture:
+
+```sh
+git clone --recurse-submodules git@github.com:0xRezaa/confidence-layer.git
+```
+
+For an existing clone, run:
 
 ```sh
 git submodule update --init --recursive
