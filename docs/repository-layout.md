@@ -5,13 +5,15 @@ The confidence layer and its repair target are independent repositories connecte
 | Purpose | Repository | Visibility | Default branch |
 | --- | --- | --- | --- |
 | Confidence-layer documents and future orchestration code | [0xRezaa/confidence-layer](https://github.com/0xRezaa/confidence-layer) | Private | `main` |
-| Express source, bug reports, and candidate fixes | [kAWEOME/nebius-nvidia-code](https://github.com/kAWEOME/nebius-nvidia-code) | Public | `master` |
+| Repair target, bug reports, and candidate fixes; currently an Express fork | [kAWEOME/nebius-nvidia-code](https://github.com/kAWEOME/nebius-nvidia-code) | Public | `master` |
 
 The confidence-layer checkout contains no copy or submodule of the issue repository. Each repository can be cloned, changed, and published independently.
 
+The target repository may be repurposed in any way needed for the demo. Express is not a product requirement. At least one GitHub issue must be available for the confidence layer to process; the brief separately requires a demonstration with a handful of seeded trivial bugs and a difficult refusal. See the [agreed scope and flow](confidence-layer-flow.md).
+
 ## GitHub integration
 
-The initial repair scenario is [issue #1 — res.send(ArrayBuffer) silently sends {} as JSON](https://github.com/kAWEOME/nebius-nvidia-code/issues/1), based on [expressjs/express#7362](https://github.com/expressjs/express/issues/7362).
+An existing repair fixture is [issue #1 — res.send(ArrayBuffer) silently sends {} as JSON](https://github.com/kAWEOME/nebius-nvidia-code/issues/1), based on [expressjs/express#7362](https://github.com/expressjs/express/issues/7362). It can be replaced when repurposing the target repository.
 
 Use the fork's explicit repository identity when accessing the issue. GitHub CLI can otherwise select upstream Express:
 
@@ -23,11 +25,11 @@ A future confidence-layer run should accept the GitHub issue URL, identify its r
 
 If execution requires source code locally, obtain that revision in a disposable run workspace. Keep confidence-layer policy, orchestration, and evidence outside the repair target. No target revision is pinned by this repository's Git tree.
 
-The issue link identifies the intended scenario, not proof of reproduction. Qualification still needs to generate and execute a reproducer. The integration and execution workflow remain to be implemented.
+The issue link identifies an available scenario, not proof of reproduction. Qualification still needs to generate and execute a reproducer. The integration and execution workflow remain to be implemented. The product interface is CLI and GitHub, with issue labels representing pipeline progress; no dashboard is planned. Label names and triggers remain open.
 
 ## Working on the issue repository
 
-Use its independent checkout to change Express code or run its existing test suite. Its package manifest currently requires Node.js 18 or newer and provides `npm test` after installing dependencies with `npm install`.
+Use its independent checkout to change target code or run its existing test suite. Repository prerequisites should be minimal, primarily using existing test coverage. For the current Express fixture, its package manifest requires Node.js 18 or newer and provides `npm test` after installing dependencies with `npm install`; these commands may change if the repository is repurposed.
 
 The issue repository has no committed dependency lockfile. Pinning its source commit alone does not guarantee identical dependency resolution across runs. Dependency and execution-environment reproducibility remain implementation decisions.
 

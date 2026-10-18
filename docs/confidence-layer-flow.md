@@ -1,14 +1,29 @@
 # Confidence layer: flow for review
 
-Status: shared understanding for review, before grill-me and Wayfinder. This captures the agreed pipeline and the suggested failure paths; it does not select implementation tools or authorize implementation.
+Status: agreed planning checkpoint from the grilling discussion, 2026-10-18. This captures the agreed pipeline and constraints; unresolved implementation choices are listed explicitly below. This checkpoint does not authorize implementation.
 
 Source: [SAP challenge brief](<SAP - AI Hackathon with Nebius & NVIDIA.pdf>), especially pages 1–2, and the team's diagram discussed in this chat.
+
+## Agreed scope and constraints
+
+- **Delivery constraint:** approximately one hour remains for the whole project at this checkpoint. Prefer the smallest practical implementation of the brief.
+- **Target repository:** the existing `kAWEOME/nebius-nvidia-code` repository can be repurposed as needed. Express and its existing issue are available fixtures, not product requirements. The product requires at least one GitHub issue associated with the target repository to process.
+- **Trivial bugs:** use the brief's definition: an automatically generated test reproduces the bug, and the resulting fix is a small, localized diff. Everything else escalates. No additional semantic bug-class allowlist is agreed. Enforce a strict, minimal interpretation of small/localized; exact limits remain open.
+- **Interface:** CLI and GitHub only; no dashboard. Represent issue progress through GitHub issue labels. Exact labels and triggers remain open.
+- **Repository prerequisites:** expect minimal setup, primarily the existing test coverage. A mandatory repository configuration format or automatic infrastructure discovery is not agreed.
+- **Qualification:** use a fresh agent with a skill-based heuristic. A fresh review context avoids inheriting the generator's conversational reasoning; it does not establish absence of bias or calibrated accuracy. The exact rubric and treatment of inferred expectations remain open.
+- **Fixer attempts:** one external fixer attempt per run. Errors, timeouts, invalid candidates, or failed gates escalate. An intentional rerun is a new recorded attempt, not an automatic repair loop.
+- **Audit:** preserve the trace of the entire pipeline, including inputs, execution results, skill version, judge assessments, candidate patch, and deployment observations. Choose pragmatic persistence; the storage mechanism and replay semantics remain open. Signed, immutable, retrievable evidence remains a brief requirement.
 
 ```mermaid
 flowchart TD
     subgraph Pipeline[Confidence-layer pipeline]
-        Issue["Bug report + repository + base commit SHA"]
-        Pre["Pre-checks: qualify the bug<br/>Automatically generate and execute a reproducer<br/>Confirm failure matches the reported bug"]
+        Issue["Issue + repo + base commit hash"]
+        subgraph PreChecks[Pre-checks: qualify the bug]
+            Generate["Generate reproducer from the issue"]
+            Execute["Execute reproducer at the base commit hash"]
+            Judge["Agent reviews issue + test + failure evidence<br/>Assess eligibility and issue–test–failure correspondence<br/>Record reasoning, ambiguities, and confidence"]
+        end
 
         subgraph External[External dependency — outside implementation scope]
             Fixer["Black-box fixer<br/>Qualified bug + base revision + failing test + failure evidence<br/>Returns a candidate diff"]
@@ -26,9 +41,13 @@ flowchart TD
         Restored{"Restoration verified?"}
         Pause["Pause the line<br/>Stop new fixes and releases<br/>Keep monitoring and recovery available"]
 
-        Issue --> Pre
-        Pre -->|Qualified; reproducer demonstrably fails| Fixer
-        Pre -->|Fail or unknown; never invoke fixer| Escalate
+        Issue --> Generate
+        Generate -->|Reproducer generated| Execute
+        Generate -->|Failure or unknown; never invoke fixer| Escalate
+        Execute -->|Test fails; failure evidence available| Judge
+        Execute -->|Pass, setup failure, timeout, or unknown; never invoke fixer| Escalate
+        Judge -->|Qualified; correspondence clearly accepted| Fixer
+        Judge -->|Rejected or unclear; never invoke fixer| Escalate
         Fixer -->|Valid candidate bound to base revision| Diff
         Fixer -->|Error, timeout, missing or invalid output| Escalate
         Diff -->|Pass| Oracle
@@ -58,9 +77,9 @@ flowchart TD
     classDef external fill:#f9d4d4,stroke:#9c4545,color:#351919;
     classDef action fill:#d7eaff,stroke:#35638c,color:#15283a;
     classDef stop fill:#fff0cc,stroke:#947020,color:#35290d;
-    class Pre,Diff,Oracle,Gate gate;
+    class Judge,Diff,Oracle,Gate gate;
     class Fixer external;
-    class Issue,Canary,Promote,Audit action;
+    class Issue,Generate,Execute,Canary,Promote,Audit action;
     class Reject,Escalate,Rollback,Restored,Pause stop;
 ```
 
@@ -76,18 +95,43 @@ flowchart TD
 - **Human intervention is an override:** pause stops new fixer and release actions; it does not stop monitoring or recovery. A human-requested rollback still requires verification. Routine successful runs need no human approval.
 - **Escalation is an outcome, not an automatic approval request:** the unattended run stops. Human investigation or a later attempt is outside the successful path shown here.
 
+## Reproducer qualification
+
+The agreed qualification input is **Issue + repo + base commit hash**. The confidence layer generates a reproducer from the issue and executes it against that exact repository revision before invoking the fixer.
+
+A fresh agent following a qualification skill evaluates the issue, generated test, and execution evidence together. It assesses whether the test exercises the reported action, what evidence supports its expected behavior, and whether the observed failure reproduces the reported symptom. It records its reasoning, ambiguities, confidence, and qualification decision. A passing test, setup failure, or unclear correspondence does not qualify the bug; missing evidence and timeouts also lead to escalation without invoking the fixer.
+
+This agent-based assessment is an agreed design choice, not a mechanism prescribed by the challenge brief. No separately approved behavioral specification is required. The agent must distinguish expectations stated in the issue from its own inferences and identify missing or contradictory expectations. Its confidence is an assessment, not a calibrated probability of correctness. Qualification remains subject to bug eligibility and does not replace the later diff, regression, or deployment checks.
+
+Required qualification audit evidence:
+
+- Issue snapshot, repository identity, and base commit hash.
+- Generated test, execution command, and execution result, including available failure evidence.
+- Judge assessment: action match, expected-behavior support, failure match, reasoning, ambiguities, confidence, and qualification decision.
+
+The qualified bug, failing test, and failure evidence passed to the fixer remain bound to the same base commit hash. The confidence representation and acceptance rule remain open; no numerical threshold is agreed.
+
+## External fixer handoff
+
+Send the issue, exact base revision, qualified reproducer, and failure evidence to the external fixer. Accept one candidate patch bound to that revision and verify it in a clean checkout. The fixer cannot modify the preserved reproducer or other verification controls to make its candidate pass.
+
+The representation of the qualified reproducer is still open: the discussion has not yet selected a test-file bundle, patch, or other transport format. The external provider and timeout also remain open.
+
 ## Required demonstration coverage
 
-The brief calls for a handful of seeded trivial bugs completing the full path unattended, followed by a genuinely difficult bug being refused and escalated. Review should also exercise a rejected candidate, missing evidence, canary rollback, and audit verification. These additional failure exercises validate the interlocks; they are not a claimed judging rubric.
+The brief calls for a handful of seeded trivial bugs completing the full path unattended through deployment and audit, followed by a genuinely difficult bug being refused and escalated. One available GitHub issue is the product's input prerequisite; it does not replace this multi-bug demonstration requirement. No exact bug count beyond the brief is agreed.
+
+Exercises for a rejected candidate, missing evidence, canary rollback, and audit verification are additional review recommendations, not added demo acceptance requirements.
 
 ## Decisions still open
 
-- Intended repair target: Express framework code or a seeded application using this repository.
-- Eligible bug classes and the trusted source of expected behavior for generated tests.
+- Concrete demo application and seeded bugs; repository identity and existing Express behavior do not constrain this choice.
+- Confidence representation and acceptance rule for the agreed agent-based issue–test–failure assessment, including when inferred expectations are sufficient to qualify a bug.
 - Executable definitions of small/localized, protected paths, secret inspection, and dependency changes.
-- Fixer interface, available external provider, and failure/time limits.
+- Qualified reproducer transport format, external fixer provider, and timeout; the single-attempt handoff behavior is agreed.
+- Minimal repository execution setup, CLI commands, GitHub triggers, and issue labels.
 - Deployment target, feature-flag mechanism, canary exposure, observation window, SLO thresholds, and rollback verification.
 - Evidence formats, signing-key custody, immutable storage, and replay procedure.
 - Which integrations can be demonstrated live, which use fixtures or simulations, and which brief requirements would remain unmet.
 
-No numerical thresholds, sponsor technologies, specific bug fixtures, or infrastructure choices are agreed by this diagram.
+No numerical gate thresholds, sponsor technologies, specific bug fixtures, or infrastructure choices are agreed at this checkpoint.
