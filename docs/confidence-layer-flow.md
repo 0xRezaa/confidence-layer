@@ -15,6 +15,7 @@ Source: [SAP challenge brief](<SAP - AI Hackathon with Nebius & NVIDIA.pdf>), es
 - **Fixer attempts:** one external fixer attempt per run. Errors, timeouts, invalid candidates, or failed gates escalate. An intentional rerun is a new recorded attempt, not an automatic repair loop.
 - **External fixer backend:** use Codex CLI through a thin local adapter, with one fresh non-interactive session and the existing configured model initially. Orchestration and evidence stay local; model inference uses the remote service. Capture events and exit status, then extract the actual workspace changes as the candidate patch for independent verification.
 - **Local execution and audit:** execute the pipeline locally and persist the entire trace in one directory per run. Use `gh` for GitHub access and issue-label updates; local storage itself does not depend on `gh`. Preserve inputs, execution results, skill version, judge assessments, candidate patch, and deployment observations. Local signed evidence provides tamper detection; enforced immutable retention remains an unmet brief requirement in this demo.
+- **Deployment:** use a single local Docker application container. Save the stable image ID and launch settings, deploy the verified candidate image, and run startup/readiness checks plus a few HTTP smoke requests during a short observation window. On failure or missing observations, restart the saved stable image and verify its response. Mark the candidate stable only after all checks pass. Brief service interruption is acceptable. Omit the traffic generator and weighted router; traffic canary and broader SLO monitoring remain documented brief requirement gaps.
 
 ```mermaid
 flowchart TD
@@ -33,12 +34,12 @@ flowchart TD
         Diff["Diff inspection<br/>Small and localized; no protected paths touched<br/>No added secrets; dependencies unchanged"]
         Oracle["Behavioral oracle<br/>Same reproducer: red to green<br/>Full regression suite remains green<br/>Tests and test configuration are not weakened"]
         Gate["Deployment gate<br/>Both post-check categories clearly pass<br/>Evidence identifies the exact candidate and deployable artifact"]
-        Canary["Deploy behind a feature flag and canary<br/>Observe behavior and SLOs"]
-        Promote["Promote automatically<br/>No routine human approval"]
+        Deploy["Replace local Docker container with verified candidate<br/>Check startup, readiness, and HTTP smoke responses"]
+        Promote["Mark candidate as latest stable automatically<br/>No routine human approval"]
 
         Reject["Reject candidate"]
         Escalate["Escalate bug to a human<br/>Record reason and available evidence"]
-        Rollback["Automatic rollback<br/>Disable candidate traffic; restore previous release"]
+        Rollback["Automatic rollback<br/>Restore saved stable image and launch settings"]
         Restored{"Restoration verified?"}
         Pause["Pause the line<br/>Stop new fixes and releases<br/>Keep monitoring and recovery available"]
 
@@ -56,10 +57,10 @@ flowchart TD
         Oracle -->|Pass| Gate
         Oracle -->|Fail or unknown| Reject
         Reject --> Escalate
-        Gate -->|All required evidence valid and complete| Canary
+        Gate -->|All required evidence valid and complete| Deploy
         Gate -->|Fail or unknown; do not deploy| Escalate
-        Canary -->|Observation criteria clearly pass| Promote
-        Canary -->|SLO breach, failed rollout, or missing observations| Rollback
+        Deploy -->|Startup, readiness, and smoke checks clearly pass| Promote
+        Deploy -->|Failed rollout, failed checks, or missing observations| Rollback
         Rollback --> Restored
         Restored -->|Yes| Escalate
         Restored -->|No or unknown| Pause
@@ -80,7 +81,7 @@ flowchart TD
     classDef stop fill:#fff0cc,stroke:#947020,color:#35290d;
     class Judge,Diff,Oracle,Gate gate;
     class Fixer external;
-    class Issue,Generate,Execute,Canary,Promote,Audit action;
+    class Issue,Generate,Execute,Deploy,Promote,Audit action;
     class Reject,Escalate,Rollback,Restored,Pause stop;
 ```
 
@@ -128,11 +129,19 @@ Store each run outside the repair target in its own local directory, containing 
 
 Decision replay verifies signatures and hashes, then reapplies the decision rules to recorded evidence. A new model assessment or test execution is a new recorded assessment or execution, not a promise of identical output. Record the rules used so replay can identify them. Signed local files provide tamper detection, not enforced immutable retention; this limitation must remain visible in the demo. Exact serialization and signing implementation remain open.
 
+## Local Docker deployment and rollback
+
+Keep the latest stable full image ID and launch settings available before replacing the application container. Deploy the exact candidate image authorized by verification. A running container alone is insufficient: check startup/readiness and make a few HTTP smoke requests over a short observation window. Only mark the candidate as stable after these checks clearly pass.
+
+On startup, readiness, or smoke-check failure, or missing observations, stop the candidate and restart the saved stable image using its saved launch settings. Probe the application response to verify restoration; successful Docker commands alone do not establish recovery. If restoration fails or is unclear, pause new fixes/releases and escalate. Retain rollback image identity and launch settings when advancing the stable revision so a human-requested rollback remains possible.
+
+This is a single-container local deployment with possible brief interruption. A traffic generator, weighted router, traffic canary, and broader SLO monitoring are omitted. The brief's full canary/feature-flag/SLO deployment path is therefore not demonstrated; this is an accepted demo limitation, alongside the absence of enforced immutable audit retention. The previously agreed `cl:canary` issue label refers only to the reduced deployment-observation stage; its naming should be aligned before implementation to avoid implying full canary coverage. Exact observation duration, smoke assertions, and first-run baseline setup remain open.
+
 ## Required demonstration coverage
 
 The brief calls for a handful of seeded trivial bugs completing the full path unattended through deployment and audit, followed by a genuinely difficult bug being refused and escalated. One available GitHub issue is the product's input prerequisite; it does not replace this multi-bug demonstration requirement. No exact bug count beyond the brief is agreed.
 
-Exercises for a rejected candidate, missing evidence, canary rollback, and audit verification are additional review recommendations, not added demo acceptance requirements.
+Exercises for a rejected candidate, missing evidence, deployment rollback, and audit verification are additional review recommendations, not added demo acceptance requirements. The accepted local demo scope does not fulfill the brief's full canary/SLO path or enforced immutable retention; do not present it as full compliance with those requirements.
 
 ## Decisions still open
 
@@ -140,8 +149,8 @@ Exercises for a rejected candidate, missing evidence, canary rollback, and audit
 - Protected-path list, secret inspection, and dependency-change detection; production-patch size/locality limits are agreed.
 - External fixer timeout; Codex CLI, the single-attempt handoff, and test-patch transport are agreed.
 - Exact CLI pause/rollback behavior and command spelling; manual CLI initiation and the issue-label progression are agreed.
-- Deployment target, feature-flag mechanism, canary exposure, observation window, SLO thresholds, and rollback verification.
+- Docker observation duration, smoke assertions, first-run stable baseline setup, and deployment-stage label naming; single-container replacement and verified rollback are agreed. Full canary/SLO behavior is an accepted gap.
 - Exact evidence serialization, signing implementation, and local key provisioning; local storage and recorded-evidence replay are agreed, with enforced immutable retention a documented gap.
 - Which integrations can be demonstrated live, which use fixtures or simulations, and which brief requirements would remain unmet.
 
-Patch-size limits and local execution/storage are agreed. Canary thresholds, sponsor technologies, specific bug fixtures, and deployment mechanics remain open.
+Patch-size limits, local execution/storage, and single-container Docker deployment with verified rollback are agreed. Specific bug fixtures, remaining policy details, and execution/observation limits remain open.
