@@ -1,3 +1,0 @@
-[submodule "fixtures/issue-repo"]
-	path = fixtures/issue-repo
-	url = https://github.com/kAWEOME/nebius-nvidia-code.git

@@ -1,39 +1,38 @@
 # Repository boundary
 
-The confidence layer and its repair target are separate Git repositories. The existing GitHub repository, [kAWEOME/nebius-nvidia-code](https://github.com/kAWEOME/nebius-nvidia-code), remains the Express fork and owner of [issue #1](https://github.com/kAWEOME/nebius-nvidia-code/issues/1). The new confidence-layer repository owns the project documents and future orchestration code.
+The confidence layer and its repair target are independent repositories connected through GitHub links.
 
-## Why a submodule
+| Purpose | Repository | Visibility | Default branch |
+| --- | --- | --- | --- |
+| Confidence-layer documents and future orchestration code | [0xRezaa/confidence-layer](https://github.com/0xRezaa/confidence-layer) | Private | `main` |
+| Express source, bug reports, and candidate fixes | [kAWEOME/nebius-nvidia-code](https://github.com/kAWEOME/nebius-nvidia-code) | Public | `master` |
 
-`fixtures/issue-repo` is a submodule pinned to a specific fork commit. This keeps the target available within the confidence-layer checkout without copying Express into its history. A run can bind its evidence to the recorded base revision, and changing the fixture revision produces a reviewable parent-repository change.
+The confidence-layer checkout contains no copy or submodule of the issue repository. Each repository can be cloned, changed, and published independently.
 
-Git issues are hosted by GitHub, not stored in a clone or submodule. Read and update issues against the fork explicitly, for example `gh issue view 1 --repo kAWEOME/nebius-nvidia-code`; GitHub CLI can otherwise select the upstream Express repository.
+## GitHub integration
 
-A clone-on-demand fixture would also preserve this boundary, but would require bootstrap logic and an explicit revision manifest. A subtree or vendored copy would duplicate the target code in the confidence-layer history. The submodule is sufficient for the current structure.
+The initial repair scenario is [issue #1 — res.send(ArrayBuffer) silently sends {} as JSON](https://github.com/kAWEOME/nebius-nvidia-code/issues/1), based on [expressjs/express#7362](https://github.com/expressjs/express/issues/7362).
+
+Use the fork's explicit repository identity when accessing the issue. GitHub CLI can otherwise select upstream Express:
+
+```sh
+gh issue view 1 --repo kAWEOME/nebius-nvidia-code
+```
+
+A future confidence-layer run should accept the GitHub issue URL, identify its repository, and record an exact base commit SHA before qualification begins. Bind the reproducer, candidate diff, verification evidence, and deployment artifact to that revision as described in the flow document. A mutable branch name or issue URL alone does not identify the source revision that was verified.
+
+If execution requires source code locally, obtain that revision in a disposable run workspace. Keep confidence-layer policy, orchestration, and evidence outside the repair target. No target revision is pinned by this repository's Git tree.
+
+The issue link identifies the intended scenario, not proof of reproduction. Qualification still needs to generate and execute a reproducer. The integration and execution workflow remain to be implemented.
+
+## Working on the issue repository
+
+Use its independent checkout to change Express code or run its existing test suite. Its package manifest currently requires Node.js 18 or newer and provides `npm test` after installing dependencies with `npm install`.
+
+The issue repository has no committed dependency lockfile. Pinning its source commit alone does not guarantee identical dependency resolution across runs. Dependency and execution-environment reproducibility remain implementation decisions.
 
 ## Documents and history
 
-Both `confidence-layer-flow.md` and the SAP challenge PDF live in this repository's `docs/` directory. Their contents were copied without modification. They were removed from the fork's current tree, while older fork commits retain them. No existing Git history was rewritten.
+Both `confidence-layer-flow.md` and the SAP challenge PDF belong in this repository's `docs/` directory. They were moved without changing their contents, and removed from the issue repository's current tree.
 
-The pre-split checkpoint in the fork is `dce54e54f50eeb410866adfcaba3d3d1592c4020` (`docs: capture confidence-layer flow before repository split`).
-
-## Updating the fixture baseline
-
-From the confidence-layer root, first ensure there are no uncommitted fixture changes, then select an explicitly reviewed commit:
-
-```sh
-git -C fixtures/issue-repo fetch origin
-git -C fixtures/issue-repo checkout --detach <reviewed-commit-sha>
-git add fixtures/issue-repo
-git commit -m "chore: update issue fixture baseline"
-```
-
-Commit and push target-repository changes to the fork before publishing a parent commit that references them. Avoid automatically following the fork's branch tip: each run needs a fixed base SHA.
-
-## GitHub repositories
-
-- Confidence layer: [0xRezaa/confidence-layer](https://github.com/0xRezaa/confidence-layer), private, default branch `main`.
-- Issue fixture: [kAWEOME/nebius-nvidia-code](https://github.com/kAWEOME/nebius-nvidia-code), public, default branch `master`.
-
-The fork's checkpoint and documentation-removal commits have been published, so the pinned fixture revision is available from GitHub. The documents remain accessible in older public fork commits; moving them into the private confidence-layer repository does not remove that history.
-
-For future fixture updates, push the target commit to the issue repository before publishing the parent commit that references it. Verify published changes with a fresh recursive clone using the instructions in the root README.
+The pre-split checkpoint in the issue repository is `dce54e54f50eeb410866adfcaba3d3d1592c4020` (`docs: capture confidence-layer flow before repository split`). Those documents remain accessible in older public issue-repository commits. No existing Git history was rewritten.
