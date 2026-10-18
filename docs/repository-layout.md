@@ -25,11 +25,13 @@ A future confidence-layer run should accept the GitHub issue URL, identify its r
 
 If execution requires source code locally, obtain that revision in a disposable run workspace. Keep confidence-layer policy, orchestration, and evidence outside the repair target. No target revision is pinned by this repository's Git tree.
 
-The issue link identifies an available scenario, not proof of reproduction. Qualification still needs to generate and execute a reproducer. The integration and execution workflow remain to be implemented. The product interface is CLI and GitHub, with issue labels representing pipeline progress; no dashboard is planned. Label names and triggers remain open.
+The issue link identifies an available scenario, not proof of reproduction. Qualification still needs to generate and execute a reproducer. The integration and execution workflow remain to be implemented. Execution and evidence storage are local, with `gh` handling GitHub access and issue-label updates. The product interface is CLI and GitHub, with issue labels representing pipeline progress; no dashboard is planned. Label names and triggers remain open.
 
 ## Working on the issue repository
 
 Use its independent checkout to change target code or run its existing test suite. Repository prerequisites should be minimal, primarily using existing test coverage. For the current Express fixture, its package manifest requires Node.js 18 or newer and provides `npm test` after installing dependencies with `npm install`; these commands may change if the repository is repurposed.
+
+A run accepts an issue URL, optional install command, and existing regression-test command through the CLI. No new target-repository configuration file or automatic command discovery is required. The existing suite must pass at the base revision; after repair, the preserved generated reproducer and full suite must pass. Record the supplied commands and prevent the fixer from modifying them. The reproducer is a separate test-only patch with its fixed execution command and failure evidence.
 
 The issue repository has no committed dependency lockfile. Pinning its source commit alone does not guarantee identical dependency resolution across runs. Dependency and execution-environment reproducibility remain implementation decisions.
 
