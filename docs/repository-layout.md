@@ -25,7 +25,7 @@ A future confidence-layer run should accept the GitHub issue URL, identify its r
 
 If execution requires source code locally, obtain that revision in a disposable run workspace. Keep confidence-layer policy, orchestration, and evidence outside the repair target. No target revision is pinned by this repository's Git tree.
 
-The issue link identifies an available scenario, not proof of reproduction. Qualification still needs to generate and execute a reproducer. The integration and execution workflow remain to be implemented. Execution and evidence storage are local, with `gh` handling GitHub access and issue-label updates. The product interface is CLI and GitHub, with issue labels representing pipeline progress; no dashboard is planned. Label names and triggers remain open.
+The issue link identifies an available scenario, not proof of reproduction. Qualification still needs to generate and execute a reproducer. The integration and execution workflow remain to be implemented. Execution and evidence storage are local, with `gh` handling GitHub access and issue-label updates. The product interface is CLI and GitHub; no dashboard is planned. Start runs explicitly through the CLI with an issue URL, and defer label-triggered execution. Maintain one pipeline label at a time: `cl:qualifying`, `cl:fixing`, `cl:verifying`, `cl:canary`, then `cl:resolved` or `cl:escalated`. Provide CLI pause and rollback controls.
 
 ## Working on the issue repository
 
