@@ -13,6 +13,7 @@ Source: [SAP challenge brief](<SAP - AI Hackathon with Nebius & NVIDIA.pdf>), es
 - **Repository prerequisites:** accept an issue URL, an optional install command, and the existing regression-test command through the CLI. Reuse the existing test framework; require the base suite to pass, then require the preserved reproducer and full suite to pass after repair. Record supplied commands and prevent the fixer from changing them. Do not add a target-repository configuration system or automatic command discovery. Deployment setup remains a separate decision.
 - **Qualification:** use one fresh agent, one short qualification skill, and one structured verdict. Require a match to the reported action, supported expected behavior, and a failure demonstrating the reported problem rather than broken setup. Permit straightforward inferences from repository documentation, tests, and surrounding code; escalate when materially different interpretations remain plausible. Record evidence and a short reason, without numeric confidence, agent voting, or a calibration framework. Fresh context does not establish absence of bias.
 - **Fixer attempts:** one external fixer attempt per run. Errors, timeouts, invalid candidates, or failed gates escalate. An intentional rerun is a new recorded attempt, not an automatic repair loop.
+- **External fixer backend:** use Codex CLI through a thin local adapter, with one fresh non-interactive session and the existing configured model initially. Orchestration and evidence stay local; model inference uses the remote service. Capture events and exit status, then extract the actual workspace changes as the candidate patch for independent verification.
 - **Local execution and audit:** execute the pipeline locally and persist the entire trace in one directory per run. Use `gh` for GitHub access and issue-label updates; local storage itself does not depend on `gh`. Preserve inputs, execution results, skill version, judge assessments, candidate patch, and deployment observations. Local signed evidence provides tamper detection; enforced immutable retention remains an unmet brief requirement in this demo.
 
 ```mermaid
@@ -115,7 +116,9 @@ The qualified bug, failing test, and failure evidence passed to the fixer remain
 
 Send the issue, exact base revision, qualified reproducer, and failure evidence to the external fixer. Accept one candidate patch bound to that revision and verify it in a clean checkout. The fixer cannot modify the preserved reproducer or other verification controls to make its candidate pass.
 
-The qualified reproducer is a **test-only Git patch plus metadata** containing the base SHA, test command, patch hash, and observed failure. The fixer returns a separate production-code patch against the same base SHA. Verification starts from a clean base checkout, applies both patches, and executes the preserved reproducer and full regression suite. Reject any fixer patch that changes the reproducer, other tests, or verification controls. The external provider and timeout remain open.
+The qualified reproducer is a **test-only Git patch plus metadata** containing the base SHA, test command, patch hash, and observed failure. The fixer returns a separate production-code patch against the same base SHA. Verification starts from a clean base checkout, applies both patches, and executes the preserved reproducer and full regression suite. Reject any fixer patch that changes the reproducer, other tests, or verification controls.
+
+Use `codex exec` in a disposable checkout containing the qualified reproducer. Capture JSONL events and exit status. Extract changes relative to the prepared checkout, inspect all changes for forbidden edits, and return the production patch bound to the original base SHA. Do not trust the agent's prose as proof of a valid patch or discard forbidden changes before inspecting them. Enforce a timeout externally; its duration remains open. CLI presence and login status have been checked, but a live fixer invocation remains untested.
 
 ## Local execution and evidence
 
@@ -135,7 +138,7 @@ Exercises for a rejected candidate, missing evidence, canary rollback, and audit
 
 - Concrete demo application and seeded bugs; repository identity and existing Express behavior do not constrain this choice.
 - Protected-path list, secret inspection, and dependency-change detection; production-patch size/locality limits are agreed.
-- External fixer provider and timeout; the single-attempt handoff and test-patch transport are agreed.
+- External fixer timeout; Codex CLI, the single-attempt handoff, and test-patch transport are agreed.
 - Exact CLI pause/rollback behavior and command spelling; manual CLI initiation and the issue-label progression are agreed.
 - Deployment target, feature-flag mechanism, canary exposure, observation window, SLO thresholds, and rollback verification.
 - Exact evidence serialization, signing implementation, and local key provisioning; local storage and recorded-evidence replay are agreed, with enforced immutable retention a documented gap.
